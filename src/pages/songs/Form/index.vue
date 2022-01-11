@@ -11,8 +11,6 @@
         </a-col>
       </a-row>
 
-
-
       <a-row :gutter="8">
         <a-col :xs="24" :md="6">
           <a-form-model-item label="Genre">
@@ -28,10 +26,10 @@
         <a-col :xs="24" :md="6">
           <a-form-model-item label="Status">
             <a-select placeholder="Status" v-model="form.status">
-              <a-select-option :value="true">
+              <a-select-option value="1">
                 Available
               </a-select-option>
-              <a-select-option :value="false">
+              <a-select-option value="0">
                 Not available
               </a-select-option>
             </a-select>
@@ -111,7 +109,7 @@ export default {
         if (this.id) {
           SongService.updateSong(this.id, this.form).then((response) => {
             if (response.data.status !== 200) {
-              this.$message.error(response.data.message + " Try again");
+              this.$message.error(response.data.message + "! Try again");
             }else {
               this.$message.success(this.message);
             }

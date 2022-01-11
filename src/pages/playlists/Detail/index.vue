@@ -6,7 +6,12 @@
     </a-card>
 
     <a-card>
-      <a-table :columns="columns" :data-source="playlistDetails" bordered>
+      <a-table
+          :columns="columns"
+          :data-source="playlistDetails"
+          rowKey="action"
+          :pagination="false"
+          bordered>
         <a slot="name" slot-scope="text">{{ text }}</a>
         <a-avatar
             slot="image"
@@ -16,12 +21,12 @@
             icon="meh"
             :src="image"/>
         <span slot="status" slot-scope="text">
-          <a-tag :color="text === false ? 'volcano' : 'green'"> {{ text === false ? 'Not Available' : 'Available' }}
+          <a-tag :color="text === 0 ? 'volcano' : 'green'"> {{ text === 0 ? 'Not Available' : 'Available' }}
           </a-tag>
         </span>
-        <span slot="action" slot-scope="text, record">
+        <span slot="action" slot-scope="text">
           <a-tooltip placement="top" title="Remove song from playlist">
-            <a @click="removeSongFromPlaylist(playlist.id, record.id)"><a-icon type="delete"/></a>
+            <a @click="showDeleteConfirm(playlist.id, text.song)"><a-icon type="delete"/></a>
           </a-tooltip>
         </span>
       </a-table>
@@ -90,6 +95,33 @@ export default {
         this.playlistDetails = response.data.data.playlist;
         console.log(response);
       })
+    },
+
+    showDeleteConfirm(pid, song){
+      this.$confirm({
+        title: 'Remove this song ' + '"' + song.name + '"' + ' from playlist ' + '"' + this.playlist.name + '"',
+        // content: 'Some descriptions',
+        okText: 'Yes',
+        okType: 'danger',
+        cancelText: 'No',
+        onOk : () =>{
+          this.removeSongFromPlaylist(pid, song.id)
+        },
+        onCancel() {
+          console.log('Cancel');
+        },
+      });
+    },
+
+    removeSongFromPlaylist(pid, sid){
+      PlaylistService.removeSongFromPlaylist(pid, sid).then((response) => {
+        if (response.data.status === 200) {
+          this.$message.success(response.data.message);
+          this.getPlaylistDetailSongs()
+        }
+      }).catch((error) =>{
+        this.$message.error(error.response.data.message);
+      });
     }
   },
   created() {

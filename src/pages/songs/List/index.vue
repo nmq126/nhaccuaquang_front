@@ -22,10 +22,13 @@
           <a-col :span="4">
             <a-form-item>
               <a-select placeholder="Status" v-model="params.status">
-                <a-select-option value="true">
+                <a-select-option value="-1">
+                  All
+                </a-select-option>
+                <a-select-option value="1">
                   Available
                 </a-select-option>
-                <a-select-option value="false">
+                <a-select-option value="0">
                   Not available
                 </a-select-option>
               </a-select>
@@ -33,7 +36,10 @@
           </a-col>
           <a-col :span="4">
             <a-form-item>
-              <a-select placeholder="Genre" v-model="params.genre_id">
+              <a-select placeholder="Genre" v-model="params.genre_id" >
+                <a-select-option value = "-1">
+                  All
+                </a-select-option>
                 <a-select-option :key="genre.id" v-for="genre in genres" :value="genre.id">
                   {{ genre.name }}
                 </a-select-option>
@@ -42,7 +48,11 @@
           </a-col>
           <a-col :span="8">
             <a-form-item>
-              <a-range-picker/>
+              <a-range-picker
+                  @change="rangeChange"
+                  :placeholder= "['Start release date', 'End release date']"
+                  v-model="times"
+                  :ranges="{ Today: [moment(), moment()], 'This Month': [moment(), moment().endOf('month')] }"/>
             </a-form-item>
           </a-col>
 
@@ -62,7 +72,6 @@
     </a-card>
 
     <a-card :style="{ margin: '24px 0' }">
-      <a-skeleton active v-if="!this.songs"/>
       <a-table
           :columns="columns"
           :data-source="songs"
@@ -78,7 +87,7 @@
             icon="meh"
             :src="image"/>
         <span slot="status" slot-scope="text">
-          <a-tag :color="text === false ? 'volcano' : 'green'"> {{ text === false ? 'Not available' : 'Available' }}
+          <a-tag :color="text === 0 ? 'volcano' : 'green'"> {{ text === 0 ? 'Not available' : 'Available' }}
           </a-tag>
         </span>
         <span slot="audioPlayer" slot-scope="text, record">
@@ -130,6 +139,7 @@
 import SongService from "@/services/SongService";
 import GenreService from "@/services/GenreService";
 import PlaylistService from "@/services/PlaylistService";
+import moment from 'moment';
 
 const columns = [
   {
@@ -200,8 +210,12 @@ export default {
         status: undefined,
         releasedAt: undefined,
         page: 1,
-        limit: 10
+        limit: 10,
+        from: undefined,
+        to: undefined
       },
+      range: [],
+      times:[],
       columns,
       genres: [],
       songs: [],
@@ -213,6 +227,7 @@ export default {
   },
 
   methods: {
+    moment,
     playSong(src) {
       this.player.src = src
       this.player.play()
@@ -222,6 +237,12 @@ export default {
     pauseSong(){
       this.player.pause()
       this.isPlaying = false
+    },
+
+    rangeChange(dates, dateStrings){
+      this.params.from = dateStrings[0];
+      this.params.to = dateStrings[1];
+      this.getData();
     },
 
     getData() {
@@ -258,20 +279,22 @@ export default {
         status: undefined,
         releasedAt: undefined,
         page: 1,
-        limit: 10
+        limit: 10,
+        from: undefined,
+        to: undefined
       };
+      this.times = [];
       this.getData();
     },
 
     addSongToPlaylist(pid, sid) {
       SongService.addSongToPlaylist(pid, sid).then((response) => {
-        console.log(response)
-        if (response.data.status !== 200) {
-          this.$message.error(response.data.message);
-        }else {
+        if (response.data.status === 200) {
           this.$message.success(response.data.message);
         }
-      })
+      }).catch((error) =>{
+          this.$message.error(error.response.data.message);
+      });
     },
 
 

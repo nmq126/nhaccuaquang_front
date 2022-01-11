@@ -4,7 +4,7 @@
       <div class="logo" />
       <a-menu theme="dark" :default-selected-keys="['1']" mode="inline">
         <template v-for="menu in $router.options.routes">
-          <a-menu-item :key="menu.name" v-if="!menu.children">
+          <a-menu-item :key="menu.name" v-if="!menu.children || menu.meta.hidden">
             <router-link :to="{name: menu.name}">
               <a-icon :type="menu.meta.icon" />
               <span>{{ menu.meta.title }}</span>
@@ -30,11 +30,11 @@
             <a-menu-item key="1">
               My profile
             </a-menu-item>
-            <a-menu-item key="2">
+            <a-menu-item key="2" @click="logout">
               Logout
             </a-menu-item>
           </a-menu>
-          <a-button> admin@tasc.vn <a-icon type="down" /> </a-button>
+          <a-button> {{ name }} <a-icon type="down" /> </a-button>
         </a-dropdown>
       </a-layout-header>
       <a-layout-content style="margin: 16px">
@@ -53,7 +53,17 @@ export default {
   data() {
     return {
       collapsed: false,
+      name:undefined
     };
+  },
+  methods:{
+    logout(){
+      localStorage.removeItem('token');
+      this.$router.push({name: 'Login'});
+    }
+  },
+  created() {
+    this.name = JSON.parse(localStorage.getItem('username'))
   }
 };
 </script>

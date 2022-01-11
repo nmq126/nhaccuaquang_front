@@ -1,7 +1,11 @@
 <template>
   <div>
     <a-card>
-      <a-table :columns="columns" :data-source="playlists" bordered>
+      <a-table
+          :columns="columns"
+          :data-source="playlists"
+          rowKey="id"
+          bordered>
         <a slot="name" slot-scope="text">{{ text }}</a>
         <a-avatar
             slot="image"

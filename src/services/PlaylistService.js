@@ -26,6 +26,14 @@ class PlaylistService{
     deletePlaylist(id){
         return axios.delete(PLAYLIST_API_BASE_URL + '/' + id);
     }
+
+    removeSongFromPlaylist(pid, sid){
+        return axios.delete(PLAYLIST_API_BASE_URL + '/' + pid + '/remove', {
+            params :{
+                songId: sid
+            }
+        })
+    }
 }
 
 export default new PlaylistService()
