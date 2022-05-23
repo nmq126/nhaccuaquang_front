@@ -32,7 +32,8 @@
                     mode="multiple"
                     style="width: 100%"
                     placeholder="Please select roles"
-                    >
+                    v-model="updateForm.roles"
+                >
                   <a-select-option v-for="role in roleList" :key="role.id" :value="role.id">
                     {{ role.name }}
                   </a-select-option>
@@ -57,20 +58,50 @@
 
           </a-tab-pane>
           <a-tab-pane key="2" tab="PERMISSIONS" force-render>
-            <a-row>
-              <a-form-model-item label="Permissions">
+
+            <a-button
+                :style="{ marginBottom: '20px' }"
+                type="primary"
+                icon="plus"
+                @click="showPermissionModal">
+              Assign new permission
+            </a-button>
+
+            <a-modal
+                title="Add permission"
+                :visible="visible1"
+                @ok="okPermissionModal"
+                @cancel="cancelPermissionModal"
+            >
+              <a-form-model-item label="Permission">
                 <a-select
                     size="large"
                     mode="multiple"
                     style="width: 100%"
                     placeholder="Please select permissions"
-                    v-model="form.permissions">
+                    v-model="updateForm.permissions"
+                >
                   <a-select-option v-for="permission in permissionList" :key="permission.id" :value="permission.id">
                     {{ permission.name }}
                   </a-select-option>
                 </a-select>
               </a-form-model-item>
-            </a-row>
+            </a-modal>
+
+            <a-table
+                :columns="permissionColumns"
+                :data-source="this.form.permissions"
+                :rowKey="id"
+                bordered>
+
+              <span slot="action" slot-scope="text">
+                <a-tooltip placement="top" title="Remove permission">
+                  <a @click="showDeletePermissionConfirm(text)"><a-icon type="delete"/></a>
+                </a-tooltip>
+              </span>
+
+            </a-table>
+
           </a-tab-pane>
 
         </a-tabs>
@@ -84,6 +115,20 @@
 <script>
 
 const roleColumns = [
+  {
+    title: 'Name',
+    dataIndex: 'name',
+    key: 'name',
+  },
+
+  {
+    title: 'Action',
+    key: 'action',
+    scopedSlots: {customRender: 'action'},
+  },
+];
+
+const permissionColumns = [
   {
     title: 'Name',
     dataIndex: 'name',
@@ -113,48 +158,49 @@ export default {
         roles: [],
         permissions: []
       },
+      updateForm: {
+        roles: [],
+        permissions: []
+      },
       removeRoleForm: {
         username: undefined,
         roleName: undefined
       },
+      removePermissionForm: {
+        username: undefined,
+        permName: undefined
+      },
       permissionList: [],
       roleList: [],
       roleColumns,
+      permissionColumns,
       visible: false,
+      visible1: false,
     };
   },
   methods: {
-    getData() {
-      AccountService.getAccountDetail(this.$router.currentRoute.params.id).then((response) => {
-        console.log(response)
+     getData() {
+       AccountService.getAccountDetail(this.$router.currentRoute.params.id).then((response) => {
         this.form.username = response.data.data.account.username;
-        response.data.data.account.permissions.forEach(permission => {
-          this.form.permissions.push(permission.id)
-        });
+        this.form.permissions = response.data.data.account.permissions
         this.form.roles = response.data.data.account.roles
-        // response.data.data.account.roles.forEach(role => {
-        //   this.form.roles.push(role.id)
-        // });
+
+
       }).catch(error => {
         if (error.response.data.status === 403) {
           this.$message.error("You have no permission to do this")
         }
       })
+    },
+
+    getPermissionAdd() {
       RoleService.getPermissions().then((response) => {
         this.permissionList = response.data.data.permissions
-      }).catch(error => {
-        if (error.response.data.status === 403) {
-          this.$message.error("You have no permission to do this")
-        }
-      })
 
-      RoleService.getRoles().then((response) => {
-        this.roleList = response.data.data.roles
-
-        this.roleList.forEach(roleAdd => {
-          this.form.roles.forEach(role => {
-            if (role.id === roleAdd.id){
-              this.roleList.splice(this.roleList.indexOf(roleAdd), 1)
+        this.form.permissions.forEach(permission => {
+          this.permissionList.forEach(permissionAdd => {
+            if (permission.id === permissionAdd.id) {
+              this.permissionList.splice(this.permissionList.indexOf(permissionAdd), 1)
             }
           })
         })
@@ -166,11 +212,33 @@ export default {
       })
     },
 
+    getRoleAdd() {
+
+      RoleService.getRoles().then((response) => {
+        this.roleList = response.data.data.roles
+
+
+        this.form.roles.forEach(role => {
+          this.roleList.forEach(roleAdd => {
+            if (role.id === roleAdd.id) {
+              this.roleList.splice(this.roleList.indexOf(roleAdd), 1)
+            }
+          })
+        })
+      }).catch(error => {
+        if (error.response.data.status === 403) {
+          this.$message.error("You have no permission to do this")
+        }
+      })
+    }
+    ,
+
     onSubmit() {
 
-    },
+    }
+    ,
 
-    showDeleteRoleConfirm(role){
+    showDeleteRoleConfirm(role) {
       this.removeRoleForm.username = this.form.username
       this.removeRoleForm.roleName = role.name
       this.$confirm({
@@ -178,21 +246,54 @@ export default {
         okText: 'Yes',
         okType: 'danger',
         cancelText: 'No',
-        onOk : () =>{
+        onOk: () => {
           try {
-            AccountService.removeRoleFromAccount(this.removeRoleForm).then((response) => {
+            AccountService.removeRoleFromAccount(this.removeRoleForm).then(async (response) => {
               console.log(response)
-              if (response.status === 200){
+              if (response.status === 200) {
                 this.$message.success("Remove role successful")
-                this.getData()
+                this.$toastr('success', 'it works!', 'Yeahh')
+                await this.getData()
+                await this.getRoleAdd()
               }
             }).catch(error => {
-              if (error.response.data.status === 403){
+              if (error.response.data.status === 403) {
                 this.$message.error("You have no permission to remove role")
               }
             })
 
-          }catch (e) {
+          } catch (e) {
+            this.$message.error(e.response.data.message);
+          }
+        },
+        onCancel() {
+        },
+      });
+    },
+
+    showDeletePermissionConfirm(permission) {
+      this.removePermissionForm.username = this.form.username
+      this.removePermissionForm.permName = permission.name
+      this.$confirm({
+        title: 'Remove permission ' + permission.name + ' from this account',
+        okText: 'Yes',
+        okType: 'danger',
+        cancelText: 'No',
+        onOk: () => {
+          try {
+            AccountService.removePermissionFromAccount(this.removePermissionForm).then(async (response) => {
+              if (response.status === 200) {
+                this.$message.success("Remove permission successful")
+                await this.getData()
+                await this.getPermissionAdd()
+              }
+            }).catch(error => {
+              if (error.response.data.status === 403) {
+                this.$message.error("You have no permission to remove role")
+              }
+            })
+
+          } catch (e) {
             this.$message.error(e.response.data.message);
           }
         },
@@ -203,19 +304,63 @@ export default {
 
     showRoleModal() {
       this.visible = true;
-    },
+    }
+    ,
 
     cancelRoleModal() {
       this.visible = false;
-    },
+    }
+    ,
 
     okRoleModal() {
+      AccountService.update(this.id, this.updateForm).then(async (response) => {
+        if (response.status === 200){
+          this.updateForm.roles = []
+          this.$message.success(response.data.message)
+          await this.getData()
+          await this.getRoleAdd()
+        }
+      }).catch(error => {
+        if (error.response.data.status === 403){
+          this.$message.error("You have no permission to do this")
+        }
+      })
       this.visible = false;
     },
 
+    showPermissionModal() {
+      this.visible1 = true;
+    }
+    ,
+
+    cancelPermissionModal() {
+      this.visible1 = false;
+    }
+    ,
+
+    okPermissionModal() {
+      AccountService.update(this.id, this.updateForm).then(async (response) => {
+        if (response.status === 200){
+          this.updateForm.permissions = []
+          this.$message.success(response.data.message)
+          await this.getData()
+          await this.getPermissionAdd()
+        }
+      }).catch(error => {
+        if (error.response.data.status === 403){
+          this.$message.error("You have no permission to do this")
+        }
+      })
+      this.visible1 = false;
+      }
+    ,
+
   },
-  created() {
-    this.getData()
+   async created() {
+    this.id = this.$router.currentRoute.params.id
+    await this.getData()
+    await this.getPermissionAdd()
+    await this.getRoleAdd()
   },
 
 };

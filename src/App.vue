@@ -6,7 +6,12 @@
 
 <script>
 
+import firebaseInitialize from './firebase'
+
 export default {
   name: 'App',
+  created(){
+    firebaseInitialize();
+  }
 }
 </script>

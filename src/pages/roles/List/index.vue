@@ -105,6 +105,9 @@ export default {
               if (error.response.data.status === 403){
                 this.$message.error("You have no permission to delete a role")
               }
+              if (error.response.data.status === 500){
+                this.$message.error("Cannot delete an active role")
+              }
             })
 
           }catch (e) {

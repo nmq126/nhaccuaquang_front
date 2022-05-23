@@ -1,7 +1,7 @@
 <template>
   <a-layout id="components-layout-demo-side" style="min-height: 100vh">
     <a-layout-sider v-model="collapsed" collapsible>
-      <div class="logo" />
+      <div class="logo" @click="showToastr" />
       <a-menu theme="dark" :default-selected-keys="['1']" mode="inline">
         <template v-for="menu in $router.options.routes">
           <a-menu-item :key="menu.name" v-if="!menu.children || menu.meta.hidden">
@@ -60,7 +60,15 @@ export default {
     logout(){
       localStorage.removeItem('token');
       this.$router.push({name: 'Login'});
-    }
+    },
+    showToastr() {
+      this.$toastr('success', 'it works!', 'Yeahh')
+    },
+  },
+  mounted() {
+    document.addEventListener('noti', function(e) {
+      alert(e.detail.title + " " + e.detail.message)
+    })
   },
   created() {
     this.name = JSON.parse(localStorage.getItem('username'))

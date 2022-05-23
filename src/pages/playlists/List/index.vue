@@ -24,7 +24,9 @@
           <a-divider type="vertical"/>
           <router-link :to="{name: 'playlistEdit', params: {id: record.id}}"><a-icon type="edit"/></router-link>
           <a-divider type="vertical"/>
-          <a><a-icon type="delete"/></a>
+          <a-tooltip placement="top" title="Delete role">
+            <a @click="showDeletePlaylistConfirm(text)"><a-icon type="delete"/></a>
+          </a-tooltip>
 
           <!--          <a-divider type="vertical"/>-->
           <!--          <a class="ant-dropdown-link"> More actions <a-icon type="down"/> </a>-->
@@ -87,7 +89,41 @@ export default {
       PlaylistService.getPlaylists().then((response) => {
         this.playlists = response.data.data.playlists;
       })
-    }
+    },
+
+    showDeletePlaylistConfirm(playlist){
+      this.$confirm({
+        title: 'Delete this playlist ' + playlist.name + ' permanently',
+        // content: 'Some descriptions',
+        okText: 'Yes',
+        okType: 'danger',
+        cancelText: 'No',
+        onOk: () => {
+          try {
+            PlaylistService.deletePlaylist(playlist.id).then((response) => {
+              console.log(response)
+              if (response.status === 204) {
+                this.$message.success("Delete playlist successfully")
+                this.getPlaylists()
+              }
+            }).catch(error => {
+              if (error.response.data.status === 403) {
+                this.$message.error("You have no permission to delete a playlist")
+              }
+              if (error.response.data.status === 500) {
+                this.$message.error("Cannot delete an active role")
+              }
+            })
+
+          }catch (e) {
+            this.$message.error(e.response.data.message);
+          }
+        },
+        onCancel() {
+          console.log('Cancel');
+        },
+      });
+    },
   },
   created() {
     this.getPlaylists();
